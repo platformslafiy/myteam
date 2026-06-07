@@ -1,0 +1,22 @@
+# Python
+backend/__pycache__/
+backend/app/__pycache__/
+backend/app/routers/__pycache__/
+backend/.venv/
+backend/.env
+*.db
+*.sqlite3
+
+# Node / Vite
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# Editor / OS
+.DS_Store
+Thumbs.db
+
+# Local temp artifacts
+.chrome-tmp*/
+.render.html
+.shot.png
