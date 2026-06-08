@@ -13,6 +13,7 @@ export const PX_PER_DAY: Record<ZoomLevel, number> = {
   day: 46,
   week: 22,
   month: 9,
+  year: 2.7,
 };
 
 export interface Tick {
@@ -74,24 +75,41 @@ export function buildScale(rangeStart: Date, rangeEnd: Date, zoom: ZoomLevel): S
       if (isMonday(d) || isMonthStart) {
         ticks.push({ x, label: format(d, "d MMM"), strong: isMonthStart });
       }
-    } else {
+    } else if (zoom === "month") {
       if (isMonthStart) {
         ticks.push({ x, label: format(d, "MMM yyyy"), strong: true });
+      }
+    } else {
+      // year zoom: a tick per month, labelled "MMM", strong on January
+      if (isMonthStart) {
+        ticks.push({ x, label: format(d, "MMM"), strong: d.getMonth() === 0 });
       }
     }
   }
 
-  // Top-tier month bands.
+  // Top-tier bands: years in "year" zoom, otherwise months.
   const months: MonthBand[] = [];
-  let cursor = startOfMonth(rangeStart);
-  while (cursor <= rangeEnd) {
-    const next = startOfMonth(addDays(cursor, 32));
-    const bandStart = cursor < rangeStart ? rangeStart : cursor;
-    const bandEnd = addDays(next, -1) > rangeEnd ? rangeEnd : addDays(next, -1);
-    const x = xOf(bandStart);
-    const w = (differenceInCalendarDays(bandEnd, bandStart) + 1) * pxPerDay;
-    months.push({ x, width: w, label: format(cursor, "MMMM yyyy") });
-    cursor = next;
+  if (zoom === "year") {
+    for (let y = rangeStart.getFullYear(); y <= rangeEnd.getFullYear(); y++) {
+      const jan1 = new Date(y, 0, 1);
+      const dec31 = new Date(y, 11, 31);
+      const bandStart = jan1 < rangeStart ? rangeStart : jan1;
+      const bandEnd = dec31 > rangeEnd ? rangeEnd : dec31;
+      const x = xOf(bandStart);
+      const w = (differenceInCalendarDays(bandEnd, bandStart) + 1) * pxPerDay;
+      months.push({ x, width: w, label: String(y) });
+    }
+  } else {
+    let cursor = startOfMonth(rangeStart);
+    while (cursor <= rangeEnd) {
+      const next = startOfMonth(addDays(cursor, 32));
+      const bandStart = cursor < rangeStart ? rangeStart : cursor;
+      const bandEnd = addDays(next, -1) > rangeEnd ? rangeEnd : addDays(next, -1);
+      const x = xOf(bandStart);
+      const w = (differenceInCalendarDays(bandEnd, bandStart) + 1) * pxPerDay;
+      months.push({ x, width: w, label: format(cursor, "MMMM yyyy") });
+      cursor = next;
+    }
   }
 
   return { pxPerDay, totalDays, width, ticks, months, xOf, dateAt };

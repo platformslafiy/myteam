@@ -7,6 +7,7 @@ import { useI18n } from "@/lib/i18n";
 import { contrastText } from "@/lib/utils";
 import type { SubTask } from "@/types";
 import { buildScale, parseISO, toISO } from "./timeline/scale";
+import type { ZoomLevel } from "./timeline/types";
 
 const LEFT_W = 220;
 const HEADER_H = 48;
@@ -29,6 +30,9 @@ interface SubTaskGanttProps {
   subtasks: SubTask[];
   rangeStart: Date;
   rangeEnd: Date;
+  zoom: ZoomLevel;
+  selectedId?: number | null;
+  onSelect: (id: number) => void;
   onCommit: (id: number, patch: { start_date?: string; end_date?: string }) => void;
   onTitleCommit: (id: number, title: string) => void;
   onDelete: (id: number) => void;
@@ -39,6 +43,9 @@ export function SubTaskGantt({
   subtasks,
   rangeStart,
   rangeEnd,
+  zoom,
+  selectedId,
+  onSelect,
   onCommit,
   onTitleCommit,
   onDelete,
@@ -46,8 +53,8 @@ export function SubTaskGantt({
 }: SubTaskGanttProps) {
   const { t } = useI18n();
   const scale = React.useMemo(
-    () => buildScale(rangeStart, rangeEnd, "day"),
-    [rangeStart, rangeEnd]
+    () => buildScale(rangeStart, rangeEnd, zoom),
+    [rangeStart, rangeEnd, zoom]
   );
   const [drag, setDrag] = React.useState<DragState | null>(null);
   const dragRef = React.useRef<DragState | null>(null);
@@ -71,7 +78,11 @@ export function SubTaskGantt({
     const onUp = () => {
       const d = dragRef.current;
       setDrag(null);
-      if (!d || !d.moved) return;
+      if (!d) return;
+      if (!d.moved) {
+        onSelect(d.id); // a click (no drag) selects the sub-task for detail editing
+        return;
+      }
       const { start, end } = applyDrag(d);
       onCommit(d.id, { start_date: toISO(start), end_date: toISO(end) });
     };
@@ -81,7 +92,7 @@ export function SubTaskGantt({
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerup", onUp);
     };
-  }, [drag, scale.pxPerDay, onCommit]);
+  }, [drag, scale.pxPerDay, onCommit, onSelect]);
 
   const beginDrag = (e: React.PointerEvent, st: SubTask, mode: DragMode) => {
     if (busy) return;
@@ -181,8 +192,13 @@ export function SubTaskGantt({
             const dayCount = Math.max(1, daysBetween(startDate, endDate) + 1);
             const width = Math.max(scale.pxPerDay, dayCount * scale.pxPerDay);
             const color = st.color || "#6366f1";
+            const selected = selectedId === st.id;
             return (
-              <div key={st.id} className="flex border-b last:border-b-0" style={{ height: ROW_H }}>
+              <div
+                key={st.id}
+                className={`flex border-b last:border-b-0 ${selected ? "bg-primary/5" : ""}`}
+                style={{ height: ROW_H }}
+              >
                 {/* left cell: title + duration + delete */}
                 <div
                   className="sticky left-0 z-20 flex items-center gap-1.5 border-r bg-card px-2"
@@ -218,7 +234,11 @@ export function SubTaskGantt({
                   <div
                     onPointerDown={(e) => beginDrag(e, st, "move")}
                     className={`group absolute flex select-none items-center overflow-hidden rounded-md px-2 text-xs font-medium shadow-sm ${
-                      isDragging ? "z-30 cursor-grabbing ring-2 ring-primary" : "z-10 cursor-grab"
+                      isDragging
+                        ? "z-30 cursor-grabbing ring-2 ring-primary"
+                        : selected
+                          ? "z-20 cursor-grab ring-2 ring-primary ring-offset-1 ring-offset-background"
+                          : "z-10 cursor-grab"
                     }`}
                     style={{
                       left,

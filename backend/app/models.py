@@ -151,8 +151,47 @@ class SubTask(Base):
     progress: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     color: Mapped[str | None] = mapped_column(String(9))
     position: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    owner_id: Mapped[int | None] = mapped_column(
+        ForeignKey("team_members.id", ondelete="SET NULL")
+    )
 
     work_item: Mapped["ProjectWorkItem"] = relationship(back_populates="subtasks")
+    owner: Mapped["TeamMember | None"] = relationship()
+    assignees: Mapped[list["SubTaskAssignee"]] = relationship(
+        back_populates="subtask", cascade="all, delete-orphan"
+    )
+    teams: Mapped[list["SubTaskTeam"]] = relationship(
+        back_populates="subtask", cascade="all, delete-orphan"
+    )
+
+
+class SubTaskAssignee(Base):
+    """A member working on a sub-task (the 'who/with whom')."""
+
+    __tablename__ = "sub_task_assignees"
+    __table_args__ = (UniqueConstraint("subtask_id", "member_id", name="uq_subtask_member"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    subtask_id: Mapped[int] = mapped_column(ForeignKey("sub_tasks.id", ondelete="CASCADE"))
+    member_id: Mapped[int] = mapped_column(ForeignKey("team_members.id", ondelete="CASCADE"))
+    role: Mapped[str | None] = mapped_column(String(80), default="Support")
+
+    subtask: Mapped["SubTask"] = relationship(back_populates="assignees")
+    member: Mapped["TeamMember"] = relationship()
+
+
+class SubTaskTeam(Base):
+    """A team involved in a sub-task."""
+
+    __tablename__ = "sub_task_teams"
+    __table_args__ = (UniqueConstraint("subtask_id", "team_id", name="uq_subtask_team"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    subtask_id: Mapped[int] = mapped_column(ForeignKey("sub_tasks.id", ondelete="CASCADE"))
+    team_id: Mapped[int] = mapped_column(ForeignKey("teams.id", ondelete="CASCADE"))
+
+    subtask: Mapped["SubTask"] = relationship(back_populates="teams")
+    team: Mapped["Team"] = relationship()
 
 
 class WorkItemTeam(Base):

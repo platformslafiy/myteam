@@ -26,7 +26,8 @@ def _load_item(db: Session, item_id: int) -> models.ProjectWorkItem:
         .options(
             selectinload(models.ProjectWorkItem.assignees),
             selectinload(models.ProjectWorkItem.collaborator_teams),
-            selectinload(models.ProjectWorkItem.subtasks),
+            selectinload(models.ProjectWorkItem.subtasks).selectinload(models.SubTask.assignees),
+            selectinload(models.ProjectWorkItem.subtasks).selectinload(models.SubTask.teams),
             selectinload(models.ProjectWorkItem.jira_references),
             selectinload(models.ProjectWorkItem.comments),
             selectinload(models.ProjectWorkItem.dependencies),
@@ -52,9 +53,12 @@ def _recompute_parent_dates(item: models.ProjectWorkItem) -> None:
 )
 def create_subtask(item_id: int, payload: schemas.SubTaskCreate, db: Session = Depends(get_db)):
     item = _load_item(db, item_id)
-    item.subtasks.append(models.SubTask(**payload.model_dump()))
+    base = payload.model_dump(exclude={"assignee_ids", "assignees", "team_ids"})
+    subtask = models.SubTask(**base)
+    item.subtasks.append(subtask)
     db.flush()
-    db.refresh(item)
+    crud.apply_subtask_people(db, subtask, payload.assignee_ids, payload.assignees, payload.team_ids)
+    db.flush()
     _recompute_parent_dates(item)
     db.commit()
     return crud.work_item_to_out(_load_item(db, item_id))
@@ -71,8 +75,19 @@ def update_subtask(subtask_id: int, payload: schemas.SubTaskUpdate, db: Session 
     new_end = data.get("end_date", subtask.end_date)
     if new_end < new_start:
         raise HTTPException(status_code=422, detail="end_date must be on or after start_date")
-    for field, value in data.items():
-        setattr(subtask, field, value)
+
+    scalar_fields = {"title", "start_date", "end_date", "progress", "color", "position", "owner_id"}
+    for field in scalar_fields & data.keys():
+        setattr(subtask, field, data[field])
+
+    if "assignee_ids" in data or "assignees" in data or "team_ids" in data:
+        crud.apply_subtask_people(
+            db,
+            subtask,
+            data.get("assignee_ids"),
+            payload.assignees,
+            data.get("team_ids"),
+        )
 
     db.flush()
     item = _load_item(db, subtask.work_item_id)

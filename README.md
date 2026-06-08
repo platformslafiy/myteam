@@ -138,16 +138,20 @@ against the new database.
 - **Team-based** (team = management / müdürlük). Members and work items belong to
   a team; manage teams and members (add / edit / delete) from the **"Ekip & Üyeler"**
   dialog in the header.
-- **Per-member timeline** with Day / Week / Month zoom and a highlighted "today" line.
+- **Per-member timeline** with Day / Week / Month / **Year** zoom and a highlighted "today" line.
 - **Click a bar** to open it in the modal — editing is modal-only (no accidental
   drag edits).
 - **Per-team backlog rows:** when a member is deleted, their work items fall into
   the team's backlog (owner cleared, team preserved). Owner-less items render in a
   `{Team} · Backlog` row.
 - **Sub-task detail Gantt:** click a bar → open the work item → **"Detailed plan
-  (Gantt)"** opens a dedicated, **drag-and-drop** Gantt where you break the task
-  into sub-tasks and set their durations. The earliest start / latest end of the
-  sub-tasks automatically define the parent task's dates on the main timeline.
+  (Gantt)"** opens a dedicated, **drag-and-drop** Gantt (with its own Day / Week /
+  Month / Year zoom and a **full-screen** toggle) where you break the task into
+  sub-tasks. Selecting a sub-task opens a **detail card** with **calendar** date
+  pickers, an **owner**, **working members**, **teams** and a progress slider —
+  just like the main task. The earliest start / latest end of the sub-tasks
+  define the parent's dates, and the union of their people & teams is **rolled up
+  into the main task's detail** (sub-task contributors / teams).
 - **Stacked lanes** separate overlapping items; higher-priority bars stack on top,
   and each bar shows a **priority indicator** (`!!!` / `!!` / `!` / `·`).
 - **Deadline-risk bar colors:** blue = normal / on track, **red = at risk**

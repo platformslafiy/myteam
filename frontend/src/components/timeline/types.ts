@@ -9,7 +9,7 @@
 import type { ReactNode } from "react";
 import type { Priority, Status } from "@/types";
 
-export type ZoomLevel = "day" | "week" | "month";
+export type ZoomLevel = "day" | "week" | "month" | "year";
 
 export interface TimelineResource {
   id: number;

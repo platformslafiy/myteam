@@ -32,12 +32,17 @@ const ACTIVE = ["Planned", "In Progress", "Blocked"];
 function computeRange(anchor: Date, zoom: ZoomLevel): { start: Date; end: Date } {
   if (zoom === "day") return { start: addDays(anchor, -7), end: addDays(anchor, 35) };
   if (zoom === "week") return { start: addDays(anchor, -21), end: addDays(anchor, 90) };
-  const start = startOfMonth(addDays(anchor, -31));
-  return { start, end: addDays(start, 365) };
+  if (zoom === "month") {
+    const start = startOfMonth(addDays(anchor, -31));
+    return { start, end: addDays(start, 365) };
+  }
+  // year: show ~2.5 years starting a couple of months before the anchor
+  const start = startOfMonth(addDays(anchor, -62));
+  return { start, end: addDays(start, 365 * 2 + 180) };
 }
 
 function shiftAmount(zoom: ZoomLevel): number {
-  return zoom === "day" ? 14 : zoom === "week" ? 35 : 90;
+  return zoom === "day" ? 14 : zoom === "week" ? 35 : zoom === "month" ? 90 : 365;
 }
 
 function isOverdue(item: WorkItem, today: Date): boolean {

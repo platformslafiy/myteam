@@ -74,6 +74,9 @@ export interface SubTask {
   progress: number;
   color: string | null;
   position: number;
+  owner_id: number | null;
+  assignees: Assignee[];
+  team_ids: number[];
 }
 
 export interface SubTaskInput {
@@ -83,6 +86,9 @@ export interface SubTaskInput {
   progress?: number;
   color?: string | null;
   position?: number;
+  owner_id?: number | null;
+  assignee_ids?: number[];
+  team_ids?: number[];
 }
 
 export interface WorkItem {

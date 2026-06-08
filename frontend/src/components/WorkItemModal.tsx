@@ -226,6 +226,8 @@ export function WorkItemModal({
         <SubTaskPlanDialog
           open={planOpen}
           item={current}
+          members={members}
+          teams={teams}
           onClose={() => setPlanOpen(false)}
           onItemUpdated={setCurrent}
           onChanged={onChanged}

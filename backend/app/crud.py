@@ -10,6 +10,53 @@ from sqlalchemy.orm import Session
 from . import models, schemas
 
 
+def subtask_to_out(st: models.SubTask) -> schemas.SubTaskOut:
+    """Serialize a SubTask incl. owner, assignees and team ids."""
+    return schemas.SubTaskOut(
+        id=st.id,
+        work_item_id=st.work_item_id,
+        title=st.title,
+        start_date=st.start_date,
+        end_date=st.end_date,
+        progress=st.progress,
+        color=st.color,
+        position=st.position,
+        owner_id=st.owner_id,
+        assignees=[schemas.SubTaskAssigneeOut.model_validate(a) for a in st.assignees],
+        team_ids=[t.team_id for t in st.teams],
+    )
+
+
+def apply_subtask_people(
+    db: Session,
+    st: models.SubTask,
+    assignee_ids: list[int] | None,
+    assignees: list[schemas.SubTaskAssigneeIn] | None,
+    team_ids: list[int] | None,
+) -> None:
+    """Replace a sub-task's support members and teams (when provided)."""
+    if assignee_ids is not None or assignees is not None:
+        combined: dict[int, str | None] = {}
+        for mid in assignee_ids or []:
+            combined.setdefault(mid, "Support")
+        for a in assignees or []:
+            combined[a.member_id] = a.role
+        st.assignees.clear()
+        db.flush()
+        for member_id, role in combined.items():
+            st.assignees.append(models.SubTaskAssignee(member_id=member_id, role=role))
+
+    if team_ids is not None:
+        st.teams.clear()
+        db.flush()
+        seen: set[int] = set()
+        for tid in team_ids:
+            if tid in seen:
+                continue
+            seen.add(tid)
+            st.teams.append(models.SubTaskTeam(team_id=tid))
+
+
 def work_item_to_out(item: models.ProjectWorkItem) -> schemas.WorkItemOut:
     """Convert a ProjectWorkItem ORM row into its API response model."""
     return schemas.WorkItemOut(
@@ -33,7 +80,7 @@ def work_item_to_out(item: models.ProjectWorkItem) -> schemas.WorkItemOut:
         updated_at=item.updated_at,
         assignees=[schemas.AssigneeOut.model_validate(a) for a in item.assignees],
         collaborator_team_ids=[c.team_id for c in item.collaborator_teams],
-        subtasks=[schemas.SubTaskOut.model_validate(s) for s in item.subtasks],
+        subtasks=[subtask_to_out(s) for s in item.subtasks],
         jira_references=[schemas.JiraOut.model_validate(j) for j in item.jira_references],
         comments=[schemas.CommentOut.model_validate(c) for c in item.comments],
         dependency_ids=[d.depends_on_work_item_id for d in item.dependencies],

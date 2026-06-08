@@ -20,7 +20,8 @@ def _load(db: Session, item_id: int) -> models.ProjectWorkItem:
         .options(
             selectinload(models.ProjectWorkItem.assignees),
             selectinload(models.ProjectWorkItem.collaborator_teams),
-            selectinload(models.ProjectWorkItem.subtasks),
+            selectinload(models.ProjectWorkItem.subtasks).selectinload(models.SubTask.assignees),
+            selectinload(models.ProjectWorkItem.subtasks).selectinload(models.SubTask.teams),
             selectinload(models.ProjectWorkItem.jira_references),
             selectinload(models.ProjectWorkItem.comments),
             selectinload(models.ProjectWorkItem.dependencies),
@@ -60,7 +61,8 @@ def list_work_items(
     stmt = select(models.ProjectWorkItem).options(
         selectinload(models.ProjectWorkItem.assignees),
         selectinload(models.ProjectWorkItem.collaborator_teams),
-        selectinload(models.ProjectWorkItem.subtasks),
+        selectinload(models.ProjectWorkItem.subtasks).selectinload(models.SubTask.assignees),
+        selectinload(models.ProjectWorkItem.subtasks).selectinload(models.SubTask.teams),
         selectinload(models.ProjectWorkItem.jira_references),
         selectinload(models.ProjectWorkItem.comments),
         selectinload(models.ProjectWorkItem.dependencies),

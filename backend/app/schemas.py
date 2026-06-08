@@ -109,6 +109,18 @@ class JiraOut(BaseModel):
     jira_url: str | None = None
 
 
+class SubTaskAssigneeIn(BaseModel):
+    member_id: int
+    role: str | None = "Support"
+
+
+class SubTaskAssigneeOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    member_id: int
+    role: str | None = None
+
+
 class SubTaskBase(BaseModel):
     title: str = Field(min_length=1, max_length=240)
     start_date: date
@@ -116,6 +128,7 @@ class SubTaskBase(BaseModel):
     progress: int = Field(default=0, ge=0, le=100)
     color: str | None = Field(default=None, max_length=9)
     position: int = 0
+    owner_id: int | None = None
 
     @model_validator(mode="after")
     def _check_dates(self) -> "SubTaskBase":
@@ -125,7 +138,9 @@ class SubTaskBase(BaseModel):
 
 
 class SubTaskCreate(SubTaskBase):
-    pass
+    assignee_ids: list[int] = Field(default_factory=list)
+    assignees: list[SubTaskAssigneeIn] = Field(default_factory=list)
+    team_ids: list[int] = Field(default_factory=list)
 
 
 class SubTaskUpdate(BaseModel):
@@ -135,6 +150,10 @@ class SubTaskUpdate(BaseModel):
     progress: int | None = Field(default=None, ge=0, le=100)
     color: str | None = Field(default=None, max_length=9)
     position: int | None = None
+    owner_id: int | None = None
+    assignee_ids: list[int] | None = None
+    assignees: list[SubTaskAssigneeIn] | None = None
+    team_ids: list[int] | None = None
 
     @model_validator(mode="after")
     def _check_dates(self) -> "SubTaskUpdate":
@@ -153,6 +172,9 @@ class SubTaskOut(BaseModel):
     progress: int
     color: str | None = None
     position: int
+    owner_id: int | None = None
+    assignees: list[SubTaskAssigneeOut] = []
+    team_ids: list[int] = []
 
 
 class CommentIn(BaseModel):

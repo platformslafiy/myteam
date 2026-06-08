@@ -28,6 +28,7 @@ export function TimelineToolbar({
     { key: "day", label: t("zoom.day") },
     { key: "week", label: t("zoom.week") },
     { key: "month", label: t("zoom.month") },
+    { key: "year", label: t("zoom.year") },
   ];
   return (
     <div className="flex flex-wrap items-center justify-between gap-3">

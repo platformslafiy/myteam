@@ -174,16 +174,69 @@ export function WorkItemSummary({ item, members, teams, allItems }: WorkItemSumm
       {item.subtasks.length > 0 && (
         <Section icon={<ListTree className="h-3.5 w-3.5" />} label={t("plan.subtaskCount", { count: item.subtasks.length })}>
           <div className="space-y-1.5">
-            {item.subtasks.map((s) => (
-              <div key={s.id} className="flex items-center gap-2 rounded-md border bg-background px-2 py-1 text-sm">
-                <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: s.color || "#6366f1" }} />
-                <span className="flex-1 truncate">{s.title}</span>
-                <span className="shrink-0 text-xs text-muted-foreground">
-                  {fmt(s.start_date)} – {fmt(s.end_date)}
-                </span>
-              </div>
-            ))}
+            {item.subtasks.map((s) => {
+              const sOwner = s.owner_id ? byId.get(s.owner_id) : undefined;
+              const people = [
+                ...(s.owner_id ? [s.owner_id] : []),
+                ...s.assignees.map((a) => a.member_id),
+              ];
+              return (
+                <div key={s.id} className="flex items-center gap-2 rounded-md border bg-background px-2 py-1 text-sm">
+                  <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: s.color || "#6366f1" }} />
+                  <span className="flex-1 truncate">{s.title}</span>
+                  {people.length > 0 && (
+                    <span className="flex -space-x-1.5">
+                      {people.slice(0, 4).map((mid, i) => {
+                        const m = byId.get(mid);
+                        return m ? <Avatar key={`${mid}-${i}`} name={m.full_name} color={m.avatar_color} size="sm" /> : null;
+                      })}
+                    </span>
+                  )}
+                  <span className="shrink-0 text-xs text-muted-foreground" title={sOwner?.full_name}>
+                    {fmt(s.start_date)} – {fmt(s.end_date)}
+                  </span>
+                </div>
+              );
+            })}
           </div>
+
+          {/* Feed-up: union of contributors / teams across all sub-tasks */}
+          {(() => {
+            const peopleIds = new Set<number>();
+            const subTeamIds = new Set<number>();
+            for (const s of item.subtasks) {
+              if (s.owner_id) peopleIds.add(s.owner_id);
+              for (const a of s.assignees) peopleIds.add(a.member_id);
+              for (const tid of s.team_ids) subTeamIds.add(tid);
+            }
+            if (peopleIds.size === 0 && subTeamIds.size === 0) return null;
+            return (
+              <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-2 border-t pt-2.5">
+                {peopleIds.size > 0 && (
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs text-muted-foreground">{t("sum.subtaskPeople")}:</span>
+                    <span className="flex -space-x-1.5">
+                      {[...peopleIds].map((id) => {
+                        const m = byId.get(id);
+                        return m ? <Avatar key={id} name={m.full_name} color={m.avatar_color} size="sm" /> : null;
+                      })}
+                    </span>
+                  </div>
+                )}
+                {subTeamIds.size > 0 && (
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs text-muted-foreground">{t("sum.subtaskTeams")}:</span>
+                    <div className="flex flex-wrap gap-1">
+                      {[...subTeamIds].map((id) => {
+                        const tm = teamById.get(id);
+                        return tm ? <TeamChip key={id} name={tm.name} color={tm.color} /> : null;
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
         </Section>
       )}
 
