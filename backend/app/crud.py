@@ -24,6 +24,7 @@ def subtask_to_out(st: models.SubTask) -> schemas.SubTaskOut:
         owner_id=st.owner_id,
         assignees=[schemas.SubTaskAssigneeOut.model_validate(a) for a in st.assignees],
         team_ids=[t.team_id for t in st.teams],
+        logs=[schemas.SubTaskLogOut.model_validate(lg) for lg in st.logs],
     )
 
 

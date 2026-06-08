@@ -147,11 +147,14 @@ against the new database.
 - **Sub-task detail Gantt:** click a bar → open the work item → **"Detailed plan
   (Gantt)"** opens a dedicated, **drag-and-drop** Gantt (with its own Day / Week /
   Month / Year zoom and a **full-screen** toggle) where you break the task into
-  sub-tasks. Selecting a sub-task opens a **detail card** with **calendar** date
+  sub-tasks. Clicking a sub-task opens a **detail popup** with **calendar** date
   pickers, an **owner**, **working members**, **teams** and a progress slider —
   just like the main task. The earliest start / latest end of the sub-tasks
   define the parent's dates, and the union of their people & teams is **rolled up
-  into the main task's detail** (sub-task contributors / teams).
+  into the main task's detail** (sub-task contributors / teams). Each sub-task row
+  also has a **history button** opening an **activity timeline** popup where you
+  log what was done on a given date (with a progress value that advances the
+  sub-task). The main task card shows every sub-task's **progress %**.
 - **Stacked lanes** separate overlapping items; higher-priority bars stack on top,
   and each bar shows a **priority indicator** (`!!!` / `!!` / `!` / `·`).
 - **Deadline-risk bar colors:** blue = normal / on track, **red = at risk**
@@ -190,6 +193,8 @@ Base URL: `http://127.0.0.1:8080`
 | POST   | `/api/work-items/{id}/subtasks`   | Add a sub-task (returns parent)      |
 | PUT    | `/api/subtasks/{id}`              | Update a sub-task (returns parent)   |
 | DELETE | `/api/subtasks/{id}`              | Delete a sub-task (returns parent)   |
+| POST   | `/api/subtasks/{id}/logs`         | Add a history/activity entry         |
+| DELETE | `/api/subtask-logs/{id}`          | Delete a history entry               |
 | GET    | `/api/dashboard/summary`          | KPI summary                          |
 | GET    | `/api/dashboard/workload`         | Per-member workload / capacity       |
 

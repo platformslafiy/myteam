@@ -121,6 +121,24 @@ class SubTaskAssigneeOut(BaseModel):
     role: str | None = None
 
 
+class SubTaskLogIn(BaseModel):
+    log_date: date
+    note: str = Field(min_length=1)
+    progress: int | None = Field(default=None, ge=0, le=100)
+    created_by: str | None = None
+
+
+class SubTaskLogOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    subtask_id: int
+    log_date: date
+    note: str
+    progress: int | None = None
+    created_by: str | None = None
+    created_at: datetime
+
+
 class SubTaskBase(BaseModel):
     title: str = Field(min_length=1, max_length=240)
     start_date: date
@@ -175,6 +193,7 @@ class SubTaskOut(BaseModel):
     owner_id: int | None = None
     assignees: list[SubTaskAssigneeOut] = []
     team_ids: list[int] = []
+    logs: list[SubTaskLogOut] = []
 
 
 class CommentIn(BaseModel):

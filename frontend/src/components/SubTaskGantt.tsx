@@ -1,6 +1,6 @@
 import * as React from "react";
 import { addDays, format } from "date-fns";
-import { Trash2 } from "lucide-react";
+import { Trash2, History } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n";
@@ -9,7 +9,7 @@ import type { SubTask } from "@/types";
 import { buildScale, parseISO, toISO } from "./timeline/scale";
 import type { ZoomLevel } from "./timeline/types";
 
-const LEFT_W = 220;
+const LEFT_W = 252;
 const HEADER_H = 48;
 const ROW_H = 46;
 const BAR_H = 26;
@@ -32,7 +32,8 @@ interface SubTaskGanttProps {
   rangeEnd: Date;
   zoom: ZoomLevel;
   selectedId?: number | null;
-  onSelect: (id: number) => void;
+  onOpenDetail: (id: number) => void;
+  onOpenHistory: (id: number) => void;
   onCommit: (id: number, patch: { start_date?: string; end_date?: string }) => void;
   onTitleCommit: (id: number, title: string) => void;
   onDelete: (id: number) => void;
@@ -45,7 +46,8 @@ export function SubTaskGantt({
   rangeEnd,
   zoom,
   selectedId,
-  onSelect,
+  onOpenDetail,
+  onOpenHistory,
   onCommit,
   onTitleCommit,
   onDelete,
@@ -80,7 +82,7 @@ export function SubTaskGantt({
       setDrag(null);
       if (!d) return;
       if (!d.moved) {
-        onSelect(d.id); // a click (no drag) selects the sub-task for detail editing
+        onOpenDetail(d.id); // a click (no drag) opens the sub-task detail popup
         return;
       }
       const { start, end } = applyDrag(d);
@@ -92,7 +94,7 @@ export function SubTaskGantt({
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerup", onUp);
     };
-  }, [drag, scale.pxPerDay, onCommit, onSelect]);
+  }, [drag, scale.pxPerDay, onCommit, onOpenDetail]);
 
   const beginDrag = (e: React.PointerEvent, st: SubTask, mode: DragMode) => {
     if (busy) return;
@@ -221,6 +223,17 @@ export function SubTaskGantt({
                     variant="ghost"
                     size="icon"
                     className="h-6 w-6 shrink-0"
+                    title={t("plan.historyTooltip")}
+                    onClick={() => onOpenHistory(st.id)}
+                    disabled={busy}
+                  >
+                    <History className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 shrink-0"
+                    title={t("common.delete")}
                     onClick={() => onDelete(st.id)}
                     disabled={busy}
                   >

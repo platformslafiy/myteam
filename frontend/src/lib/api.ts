@@ -3,6 +3,7 @@ import type {
   DashboardSummary,
   Filters,
   SubTaskInput,
+  SubTaskLogInput,
   Team,
   TeamInput,
   TeamMember,
@@ -112,6 +113,13 @@ export const api = {
     }),
   deleteSubtask: (subtaskId: number) =>
     request<WorkItem>(`/subtasks/${subtaskId}`, { method: "DELETE" }),
+  addSubtaskLog: (subtaskId: number, data: SubTaskLogInput) =>
+    request<WorkItem>(`/subtasks/${subtaskId}/logs`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  deleteSubtaskLog: (logId: number) =>
+    request<WorkItem>(`/subtask-logs/${logId}`, { method: "DELETE" }),
 
   // Dashboard
   getSummary: () => request<DashboardSummary>("/dashboard/summary"),

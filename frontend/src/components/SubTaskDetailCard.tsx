@@ -1,8 +1,7 @@
 import * as React from "react";
-import { X, User, Users, CalendarDays, Trash2, Clock } from "lucide-react";
+import { X, User, Users, CalendarDays, Clock } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -19,7 +18,6 @@ interface SubTaskDetailCardProps {
   members: TeamMember[];
   teams: Team[];
   onUpdate: (patch: Partial<SubTaskInput>) => void;
-  onDelete: () => void;
   busy?: boolean;
 }
 
@@ -38,7 +36,6 @@ export function SubTaskDetailCard({
   members,
   teams,
   onUpdate,
-  onDelete,
   busy,
 }: SubTaskDetailCardProps) {
   const { t } = useI18n();
@@ -54,17 +51,7 @@ export function SubTaskDetailCard({
   React.useEffect(() => setProgress(subtask.progress), [subtask.id, subtask.progress]);
 
   return (
-    <div className="rounded-lg border bg-card p-4 shadow-sm">
-      <div className="mb-3 flex items-center justify-between">
-        <h4 className="flex items-center gap-2 text-sm font-semibold">
-          <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: subtask.color || "#6366f1" }} />
-          {t("plan.detailTitle")}
-        </h4>
-        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onDelete} disabled={busy}>
-          <Trash2 className="h-4 w-4 text-destructive" />
-        </Button>
-      </div>
-
+    <div>
       <div className="space-y-3">
         <div>
           <Label className="mb-1 block">{t("form.title")}</Label>

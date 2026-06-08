@@ -26,8 +26,11 @@ def _load_item(db: Session, item_id: int) -> models.ProjectWorkItem:
         .options(
             selectinload(models.ProjectWorkItem.assignees),
             selectinload(models.ProjectWorkItem.collaborator_teams),
-            selectinload(models.ProjectWorkItem.subtasks).selectinload(models.SubTask.assignees),
-            selectinload(models.ProjectWorkItem.subtasks).selectinload(models.SubTask.teams),
+            selectinload(models.ProjectWorkItem.subtasks).options(
+                selectinload(models.SubTask.assignees),
+                selectinload(models.SubTask.teams),
+                selectinload(models.SubTask.logs),
+            ),
             selectinload(models.ProjectWorkItem.jira_references),
             selectinload(models.ProjectWorkItem.comments),
             selectinload(models.ProjectWorkItem.dependencies),
@@ -108,3 +111,34 @@ def delete_subtask(subtask_id: int, db: Session = Depends(get_db)):
     _recompute_parent_dates(item)
     db.commit()
     return crud.work_item_to_out(_load_item(db, item_id))
+
+
+# --------------------------------------------------------------------------- #
+# Sub-task history / activity log
+# --------------------------------------------------------------------------- #
+@router.post(
+    "/subtasks/{subtask_id}/logs",
+    response_model=schemas.WorkItemOut,
+    status_code=status.HTTP_201_CREATED,
+)
+def add_subtask_log(subtask_id: int, payload: schemas.SubTaskLogIn, db: Session = Depends(get_db)):
+    subtask = db.get(models.SubTask, subtask_id)
+    if not subtask:
+        raise HTTPException(status_code=404, detail="Sub-task not found")
+    subtask.logs.append(models.SubTaskLog(**payload.model_dump()))
+    # A log that records a progress value advances the sub-task's progress.
+    if payload.progress is not None:
+        subtask.progress = payload.progress
+    db.commit()
+    return crud.work_item_to_out(_load_item(db, subtask.work_item_id))
+
+
+@router.delete("/subtask-logs/{log_id}", response_model=schemas.WorkItemOut)
+def delete_subtask_log(log_id: int, db: Session = Depends(get_db)):
+    log = db.get(models.SubTaskLog, log_id)
+    if not log:
+        raise HTTPException(status_code=404, detail="Log not found")
+    work_item_id = log.subtask.work_item_id
+    db.delete(log)
+    db.commit()
+    return crud.work_item_to_out(_load_item(db, work_item_id))

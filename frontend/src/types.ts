@@ -65,6 +65,23 @@ export interface Comment {
   created_at: string;
 }
 
+export interface SubTaskLog {
+  id: number;
+  subtask_id: number;
+  log_date: string;
+  note: string;
+  progress: number | null;
+  created_by: string | null;
+  created_at: string;
+}
+
+export interface SubTaskLogInput {
+  log_date: string;
+  note: string;
+  progress?: number | null;
+  created_by?: string | null;
+}
+
 export interface SubTask {
   id: number;
   work_item_id: number;
@@ -77,6 +94,7 @@ export interface SubTask {
   owner_id: number | null;
   assignees: Assignee[];
   team_ids: number[];
+  logs: SubTaskLog[];
 }
 
 export interface SubTaskInput {

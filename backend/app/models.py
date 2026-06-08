@@ -163,6 +163,11 @@ class SubTask(Base):
     teams: Mapped[list["SubTaskTeam"]] = relationship(
         back_populates="subtask", cascade="all, delete-orphan"
     )
+    logs: Mapped[list["SubTaskLog"]] = relationship(
+        back_populates="subtask",
+        cascade="all, delete-orphan",
+        order_by="SubTaskLog.log_date, SubTaskLog.id",
+    )
 
 
 class SubTaskAssignee(Base):
@@ -178,6 +183,22 @@ class SubTaskAssignee(Base):
 
     subtask: Mapped["SubTask"] = relationship(back_populates="assignees")
     member: Mapped["TeamMember"] = relationship()
+
+
+class SubTaskLog(Base):
+    """A dated progress/activity entry for a sub-task (its history timeline)."""
+
+    __tablename__ = "sub_task_logs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    subtask_id: Mapped[int] = mapped_column(ForeignKey("sub_tasks.id", ondelete="CASCADE"))
+    log_date: Mapped["Date"] = mapped_column(Date, nullable=False)
+    note: Mapped[str] = mapped_column(Text, nullable=False)
+    progress: Mapped[int | None] = mapped_column(Integer)
+    created_by: Mapped[str | None] = mapped_column(String(160))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
+
+    subtask: Mapped["SubTask"] = relationship(back_populates="logs")
 
 
 class SubTaskTeam(Base):

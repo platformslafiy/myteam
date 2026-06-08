@@ -192,6 +192,13 @@ export function WorkItemSummary({ item, members, teams, allItems }: WorkItemSumm
                       })}
                     </span>
                   )}
+                  {/* progress */}
+                  <span className="hidden h-1.5 w-16 shrink-0 overflow-hidden rounded-full bg-muted sm:block">
+                    <span className="block h-full rounded-full bg-primary" style={{ width: `${s.progress}%` }} />
+                  </span>
+                  <span className="w-9 shrink-0 text-right text-xs font-medium tabular-nums text-muted-foreground">
+                    %{s.progress}
+                  </span>
                   <span className="shrink-0 text-xs text-muted-foreground" title={sOwner?.full_name}>
                     {fmt(s.start_date)} – {fmt(s.end_date)}
                   </span>
