@@ -2,6 +2,7 @@ import type {
   Comment,
   DashboardSummary,
   Filters,
+  SubTaskInput,
   Team,
   TeamInput,
   TeamMember,
@@ -97,6 +98,20 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ comment, created_by: createdBy ?? null }),
     }),
+
+  // Sub-tasks (each mutation returns the refreshed parent work item)
+  createSubtask: (itemId: number, data: SubTaskInput) =>
+    request<WorkItem>(`/work-items/${itemId}/subtasks`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  updateSubtask: (subtaskId: number, data: Partial<SubTaskInput>) =>
+    request<WorkItem>(`/subtasks/${subtaskId}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+  deleteSubtask: (subtaskId: number) =>
+    request<WorkItem>(`/subtasks/${subtaskId}`, { method: "DELETE" }),
 
   // Dashboard
   getSummary: () => request<DashboardSummary>("/dashboard/summary"),

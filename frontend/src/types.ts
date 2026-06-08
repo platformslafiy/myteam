@@ -65,6 +65,26 @@ export interface Comment {
   created_at: string;
 }
 
+export interface SubTask {
+  id: number;
+  work_item_id: number;
+  title: string;
+  start_date: string;
+  end_date: string;
+  progress: number;
+  color: string | null;
+  position: number;
+}
+
+export interface SubTaskInput {
+  title: string;
+  start_date: string;
+  end_date: string;
+  progress?: number;
+  color?: string | null;
+  position?: number;
+}
+
 export interface WorkItem {
   id: number;
   title: string;
@@ -86,6 +106,7 @@ export interface WorkItem {
   updated_at: string;
   assignees: Assignee[];
   collaborator_team_ids: number[];
+  subtasks: SubTask[];
   jira_references: JiraReference[];
   comments: Comment[];
   dependency_ids: number[];

@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Pencil, Save, Trash2, Plus } from "lucide-react";
+import { Pencil, Save, Trash2, Plus, ListTree } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -15,6 +15,7 @@ import { api, ApiError } from "@/lib/api";
 import type { Team, TeamMember, WorkItem } from "@/types";
 import { WorkItemSummary } from "./WorkItemSummary";
 import { WorkItemForm, type WorkItemFormHandle } from "./WorkItemForm";
+import { SubTaskPlanDialog } from "./SubTaskPlanDialog";
 
 export type ModalMode = "create" | "view";
 
@@ -47,11 +48,19 @@ export function WorkItemModal({
   const [deleting, setDeleting] = React.useState(false);
   const [confirmOpen, setConfirmOpen] = React.useState(false);
   const [formValid, setFormValid] = React.useState(true);
+  const [planOpen, setPlanOpen] = React.useState(false);
+  // Local copy of the item so sub-task edits (which change parent dates) reflect
+  // immediately in the summary without reopening the modal.
+  const [current, setCurrent] = React.useState<WorkItem | null>(item);
 
   // Reset edit state whenever the modal (re)opens.
   React.useEffect(() => {
     if (open) setEditing(mode === "create");
   }, [open, mode, item?.id]);
+
+  React.useEffect(() => {
+    setCurrent(item);
+  }, [item]);
 
   const handleSave = async () => {
     const payload = formRef.current?.collect();
@@ -142,22 +151,33 @@ export function WorkItemModal({
                   allItems={allItems}
                   onValidityChange={setFormValid}
                 />
-              ) : item ? (
-                <WorkItemSummary item={item} members={members} teams={teams} allItems={allItems} />
+              ) : current ? (
+                <WorkItemSummary item={current} members={members} teams={teams} allItems={allItems} />
               ) : null}
             </div>
 
             <div className="flex items-center justify-between gap-2 border-t px-6 py-4">
-              <div>
-                {mode === "view" && item && (
-                  <Button
-                    variant="ghost"
-                    className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-                    onClick={() => setConfirmOpen(true)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                    {t("common.delete")}
-                  </Button>
+              <div className="flex items-center gap-2">
+                {mode === "view" && current && !editing && (
+                  <>
+                    <Button
+                      variant="ghost"
+                      className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                      onClick={() => setConfirmOpen(true)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      {t("common.delete")}
+                    </Button>
+                    <Button variant="secondary" onClick={() => setPlanOpen(true)}>
+                      <ListTree className="h-4 w-4" />
+                      {t("plan.open")}
+                      {current.subtasks.length > 0 && (
+                        <span className="ml-1 rounded-full bg-primary/15 px-1.5 text-xs font-semibold text-primary">
+                          {current.subtasks.length}
+                        </span>
+                      )}
+                    </Button>
+                  </>
                 )}
               </div>
               <div className="flex items-center gap-2">
@@ -201,6 +221,16 @@ export function WorkItemModal({
         onConfirm={handleDelete}
         onCancel={() => setConfirmOpen(false)}
       />
+
+      {current && (
+        <SubTaskPlanDialog
+          open={planOpen}
+          item={current}
+          onClose={() => setPlanOpen(false)}
+          onItemUpdated={setCurrent}
+          onChanged={onChanged}
+        />
+      )}
     </>
   );
 }

@@ -4,6 +4,7 @@ import {
   Clock,
   ExternalLink,
   GitBranch,
+  ListTree,
   MessageSquare,
   Target,
   User,
@@ -165,6 +166,22 @@ export function WorkItemSummary({ item, members, teams, allItems }: WorkItemSumm
           <div className="flex flex-wrap gap-2">
             {collabTeams.map((tm) => (
               <TeamChip key={tm.id} name={tm.name} color={tm.color} />
+            ))}
+          </div>
+        </Section>
+      )}
+
+      {item.subtasks.length > 0 && (
+        <Section icon={<ListTree className="h-3.5 w-3.5" />} label={t("plan.subtaskCount", { count: item.subtasks.length })}>
+          <div className="space-y-1.5">
+            {item.subtasks.map((s) => (
+              <div key={s.id} className="flex items-center gap-2 rounded-md border bg-background px-2 py-1 text-sm">
+                <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: s.color || "#6366f1" }} />
+                <span className="flex-1 truncate">{s.title}</span>
+                <span className="shrink-0 text-xs text-muted-foreground">
+                  {fmt(s.start_date)} – {fmt(s.end_date)}
+                </span>
+              </div>
             ))}
           </div>
         </Section>

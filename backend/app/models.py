@@ -97,6 +97,11 @@ class ProjectWorkItem(Base):
     collaborator_teams: Mapped[list["WorkItemTeam"]] = relationship(
         back_populates="work_item", cascade="all, delete-orphan"
     )
+    subtasks: Mapped[list["SubTask"]] = relationship(
+        back_populates="work_item",
+        cascade="all, delete-orphan",
+        order_by="SubTask.position, SubTask.start_date",
+    )
     jira_references: Mapped[list["JiraReference"]] = relationship(
         back_populates="work_item", cascade="all, delete-orphan"
     )
@@ -125,6 +130,29 @@ class WorkItemAssignee(Base):
 
     work_item: Mapped["ProjectWorkItem"] = relationship(back_populates="assignees")
     member: Mapped["TeamMember"] = relationship()
+
+
+class SubTask(Base):
+    """A sub-task within a work item, with its own start/end on the detail Gantt.
+
+    The parent work item's start/end are derived from the min/max of its
+    sub-tasks (see routers/subtasks.py).
+    """
+
+    __tablename__ = "sub_tasks"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    work_item_id: Mapped[int] = mapped_column(
+        ForeignKey("project_work_items.id", ondelete="CASCADE")
+    )
+    title: Mapped[str] = mapped_column(String(240), nullable=False)
+    start_date: Mapped["Date"] = mapped_column(Date, nullable=False)
+    end_date: Mapped["Date"] = mapped_column(Date, nullable=False)
+    progress: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    color: Mapped[str | None] = mapped_column(String(9))
+    position: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+
+    work_item: Mapped["ProjectWorkItem"] = relationship(back_populates="subtasks")
 
 
 class WorkItemTeam(Base):

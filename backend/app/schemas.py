@@ -109,6 +109,52 @@ class JiraOut(BaseModel):
     jira_url: str | None = None
 
 
+class SubTaskBase(BaseModel):
+    title: str = Field(min_length=1, max_length=240)
+    start_date: date
+    end_date: date
+    progress: int = Field(default=0, ge=0, le=100)
+    color: str | None = Field(default=None, max_length=9)
+    position: int = 0
+
+    @model_validator(mode="after")
+    def _check_dates(self) -> "SubTaskBase":
+        if self.end_date < self.start_date:
+            raise ValueError("end_date must be on or after start_date")
+        return self
+
+
+class SubTaskCreate(SubTaskBase):
+    pass
+
+
+class SubTaskUpdate(BaseModel):
+    title: str | None = Field(default=None, min_length=1, max_length=240)
+    start_date: date | None = None
+    end_date: date | None = None
+    progress: int | None = Field(default=None, ge=0, le=100)
+    color: str | None = Field(default=None, max_length=9)
+    position: int | None = None
+
+    @model_validator(mode="after")
+    def _check_dates(self) -> "SubTaskUpdate":
+        if self.start_date and self.end_date and self.end_date < self.start_date:
+            raise ValueError("end_date must be on or after start_date")
+        return self
+
+
+class SubTaskOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    work_item_id: int
+    title: str
+    start_date: date
+    end_date: date
+    progress: int
+    color: str | None = None
+    position: int
+
+
 class CommentIn(BaseModel):
     comment: str = Field(min_length=1)
     created_by: str | None = None
@@ -211,6 +257,7 @@ class WorkItemOut(BaseModel):
     updated_at: datetime
     assignees: list[AssigneeOut] = []
     collaborator_team_ids: list[int] = []
+    subtasks: list[SubTaskOut] = []
     jira_references: list[JiraOut] = []
     comments: list[CommentOut] = []
     dependency_ids: list[int] = []

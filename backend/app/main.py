@@ -9,7 +9,7 @@ from fastapi.responses import JSONResponse
 
 from .config import settings
 from .database import ensure_schema
-from .routers import dashboard, members, teams, work_items
+from .routers import dashboard, members, subtasks, teams, work_items
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("team-timeline")
@@ -31,6 +31,7 @@ app.add_middleware(
 app.include_router(teams.router)
 app.include_router(members.router)
 app.include_router(work_items.router)
+app.include_router(subtasks.router)
 app.include_router(dashboard.router)
 
 

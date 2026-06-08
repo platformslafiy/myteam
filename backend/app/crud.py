@@ -33,6 +33,7 @@ def work_item_to_out(item: models.ProjectWorkItem) -> schemas.WorkItemOut:
         updated_at=item.updated_at,
         assignees=[schemas.AssigneeOut.model_validate(a) for a in item.assignees],
         collaborator_team_ids=[c.team_id for c in item.collaborator_teams],
+        subtasks=[schemas.SubTaskOut.model_validate(s) for s in item.subtasks],
         jira_references=[schemas.JiraOut.model_validate(j) for j in item.jira_references],
         comments=[schemas.CommentOut.model_validate(c) for c in item.comments],
         dependency_ids=[d.depends_on_work_item_id for d in item.dependencies],

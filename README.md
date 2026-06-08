@@ -144,6 +144,10 @@ against the new database.
 - **Per-team backlog rows:** when a member is deleted, their work items fall into
   the team's backlog (owner cleared, team preserved). Owner-less items render in a
   `{Team} · Backlog` row.
+- **Sub-task detail Gantt:** click a bar → open the work item → **"Detailed plan
+  (Gantt)"** opens a dedicated, **drag-and-drop** Gantt where you break the task
+  into sub-tasks and set their durations. The earliest start / latest end of the
+  sub-tasks automatically define the parent task's dates on the main timeline.
 - **Stacked lanes** separate overlapping items; higher-priority bars stack on top,
   and each bar shows a **priority indicator** (`!!!` / `!!` / `!` / `·`).
 - **Deadline-risk bar colors:** blue = normal / on track, **red = at risk**
@@ -179,6 +183,9 @@ Base URL: `http://127.0.0.1:8080`
 | PUT    | `/api/work-items/{id}`            | Update a work item (partial)         |
 | DELETE | `/api/work-items/{id}`            | Delete a work item                   |
 | POST   | `/api/work-items/{id}/comments`   | Add a note/comment                   |
+| POST   | `/api/work-items/{id}/subtasks`   | Add a sub-task (returns parent)      |
+| PUT    | `/api/subtasks/{id}`              | Update a sub-task (returns parent)   |
+| DELETE | `/api/subtasks/{id}`              | Delete a sub-task (returns parent)   |
 | GET    | `/api/dashboard/summary`          | KPI summary                          |
 | GET    | `/api/dashboard/workload`         | Per-member workload / capacity       |
 
