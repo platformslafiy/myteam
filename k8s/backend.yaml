@@ -1,0 +1,72 @@
+# Backend: persistent SQLite volume + Deployment + Service.
+# Build & push the image first, then set `image:` to your registry path, e.g.
+#   docker build -t <registry>/team-timeline-backend:latest ./backend
+#   docker push  <registry>/team-timeline-backend:latest
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: backend-data
+  labels: { app: team-timeline, component: backend }
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  labels: { app: team-timeline, component: backend }
+spec:
+  replicas: 1 # SQLite on RWO volume -> keep at 1. Use PostgreSQL to scale out.
+  selector:
+    matchLabels: { app: team-timeline, component: backend }
+  template:
+    metadata:
+      labels: { app: team-timeline, component: backend }
+    spec:
+      securityContext:
+        runAsNonRoot: true
+      containers:
+        - name: backend
+          image: team-timeline-backend:latest # <-- replace with your registry path
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: DATABASE_URL
+              value: sqlite:////app/data/team_timeline.db
+            - name: SEED_ON_STARTUP
+              value: "true"
+            # For PostgreSQL instead, drop the volume and use:
+            # value: postgresql+psycopg2://user:pass@postgres:5432/team_timeline
+          volumeMounts:
+            - name: data
+              mountPath: /app/data
+          readinessProbe:
+            httpGet: { path: /api/health, port: 8080 }
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /api/health, port: 8080 }
+            initialDelaySeconds: 10
+            periodSeconds: 20
+          resources:
+            requests: { cpu: 50m, memory: 128Mi }
+            limits: { cpu: 500m, memory: 512Mi }
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: backend-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  labels: { app: team-timeline, component: backend }
+spec:
+  selector: { app: team-timeline, component: backend }
+  ports:
+    - port: 8080
+      targetPort: 8080

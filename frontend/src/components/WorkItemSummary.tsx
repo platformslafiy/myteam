@@ -4,6 +4,7 @@ import {
   Clock,
   ExternalLink,
   GitBranch,
+  History,
   ListTree,
   MessageSquare,
   Target,
@@ -22,6 +23,7 @@ interface WorkItemSummaryProps {
   members: TeamMember[];
   teams: Team[];
   allItems: WorkItem[];
+  onOpenSubtaskHistory?: (subtaskId: number) => void;
 }
 
 function TeamChip({ name, color }: { name: string; color: string }) {
@@ -53,7 +55,13 @@ function Section({ icon, label, children }: { icon: React.ReactNode; label: stri
   );
 }
 
-export function WorkItemSummary({ item, members, teams, allItems }: WorkItemSummaryProps) {
+export function WorkItemSummary({
+  item,
+  members,
+  teams,
+  allItems,
+  onOpenSubtaskHistory,
+}: WorkItemSummaryProps) {
   const { t } = useI18n();
   const byId = new Map(members.map((m) => [m.id, m]));
   const teamById = new Map(teams.map((tm) => [tm.id, tm]));
@@ -181,7 +189,13 @@ export function WorkItemSummary({ item, members, teams, allItems }: WorkItemSumm
                 ...s.assignees.map((a) => a.member_id),
               ];
               return (
-                <div key={s.id} className="flex items-center gap-2 rounded-md border bg-background px-2 py-1 text-sm">
+                <button
+                  key={s.id}
+                  type="button"
+                  onClick={() => onOpenSubtaskHistory?.(s.id)}
+                  title={t("plan.historyTooltip")}
+                  className="group/st flex w-full items-center gap-2 rounded-md border bg-background px-2 py-1 text-left text-sm transition-colors hover:border-primary/40 hover:bg-accent"
+                >
                   <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: s.color || "#6366f1" }} />
                   <span className="flex-1 truncate">{s.title}</span>
                   {people.length > 0 && (
@@ -202,7 +216,11 @@ export function WorkItemSummary({ item, members, teams, allItems }: WorkItemSumm
                   <span className="shrink-0 text-xs text-muted-foreground" title={sOwner?.full_name}>
                     {fmt(s.start_date)} – {fmt(s.end_date)}
                   </span>
-                </div>
+                  <span className="flex shrink-0 items-center gap-0.5 text-muted-foreground">
+                    <History className="h-3.5 w-3.5 opacity-50 group-hover/st:text-primary group-hover/st:opacity-100" />
+                    {s.logs.length > 0 && <span className="text-[10px] font-medium">{s.logs.length}</span>}
+                  </span>
+                </button>
               );
             })}
           </div>

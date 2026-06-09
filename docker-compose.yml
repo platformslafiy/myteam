@@ -1,0 +1,29 @@
+# Local container stack for Team Timeline Planner.
+#   docker compose up --build
+# Then open http://localhost:8081  (the frontend proxies /api to the backend).
+#
+# The backend stores its SQLite DB on the named volume so data survives restarts;
+# it is seeded with demo data only the first time (when the DB is empty).
+services:
+  backend:
+    build: ./backend
+    environment:
+      DATABASE_URL: sqlite:////app/data/team_timeline.db
+      SEED_ON_STARTUP: "true"
+      APP_PORT: "8080"
+    volumes:
+      - backend-data:/app/data
+    ports:
+      - "8080:8080" # optional: direct API access / Swagger at http://localhost:8080/docs
+
+  frontend:
+    build: ./frontend
+    environment:
+      BACKEND_URL: http://backend:8080
+    depends_on:
+      - backend
+    ports:
+      - "8081:8080"
+
+volumes:
+  backend-data:

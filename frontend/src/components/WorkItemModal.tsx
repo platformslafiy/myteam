@@ -16,6 +16,8 @@ import type { Team, TeamMember, WorkItem } from "@/types";
 import { WorkItemSummary } from "./WorkItemSummary";
 import { WorkItemForm, type WorkItemFormHandle } from "./WorkItemForm";
 import { SubTaskPlanDialog } from "./SubTaskPlanDialog";
+import { SubTaskHistoryDialog } from "./SubTaskHistoryDialog";
+import type { SubTaskLogInput } from "@/types";
 
 export type ModalMode = "create" | "view";
 
@@ -49,6 +51,8 @@ export function WorkItemModal({
   const [confirmOpen, setConfirmOpen] = React.useState(false);
   const [formValid, setFormValid] = React.useState(true);
   const [planOpen, setPlanOpen] = React.useState(false);
+  const [historyId, setHistoryId] = React.useState<number | null>(null);
+  const [logBusy, setLogBusy] = React.useState(false);
   // Local copy of the item so sub-task edits (which change parent dates) reflect
   // immediately in the summary without reopening the modal.
   const [current, setCurrent] = React.useState<WorkItem | null>(item);
@@ -118,6 +122,45 @@ export function WorkItemModal({
     }
   };
 
+  const historySubtask = current?.subtasks.find((s) => s.id === historyId) ?? null;
+
+  const handleAddLog = async (input: SubTaskLogInput) => {
+    if (historyId == null) return;
+    setLogBusy(true);
+    try {
+      const updated = await api.addSubtaskLog(historyId, input);
+      setCurrent(updated);
+      onChanged();
+      toast({ title: t("toast.logSaved"), variant: "success" });
+    } catch (e) {
+      toast({
+        title: t("toast.logFail"),
+        description: e instanceof ApiError ? e.message : t("toast.unexpected"),
+        variant: "error",
+      });
+    } finally {
+      setLogBusy(false);
+    }
+  };
+
+  const handleDeleteLog = async (logId: number) => {
+    setLogBusy(true);
+    try {
+      const updated = await api.deleteSubtaskLog(logId);
+      setCurrent(updated);
+      onChanged();
+      toast({ title: t("toast.logDeleted"), variant: "success" });
+    } catch (e) {
+      toast({
+        title: t("toast.logFail"),
+        description: e instanceof ApiError ? e.message : t("toast.unexpected"),
+        variant: "error",
+      });
+    } finally {
+      setLogBusy(false);
+    }
+  };
+
   const title =
     mode === "create"
       ? t("modal.newItem")
@@ -152,7 +195,13 @@ export function WorkItemModal({
                   onValidityChange={setFormValid}
                 />
               ) : current ? (
-                <WorkItemSummary item={current} members={members} teams={teams} allItems={allItems} />
+                <WorkItemSummary
+                  item={current}
+                  members={members}
+                  teams={teams}
+                  allItems={allItems}
+                  onOpenSubtaskHistory={setHistoryId}
+                />
               ) : null}
             </div>
 
@@ -233,6 +282,15 @@ export function WorkItemModal({
           onChanged={onChanged}
         />
       )}
+
+      <SubTaskHistoryDialog
+        open={historyId != null}
+        subtask={historySubtask}
+        onClose={() => setHistoryId(null)}
+        onAddLog={handleAddLog}
+        onDeleteLog={handleDeleteLog}
+        busy={logBusy}
+      />
     </>
   );
 }

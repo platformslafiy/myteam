@@ -1,6 +1,6 @@
 import * as React from "react";
 import { addDays, format } from "date-fns";
-import { Trash2, History } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n";
@@ -33,7 +33,6 @@ interface SubTaskGanttProps {
   zoom: ZoomLevel;
   selectedId?: number | null;
   onOpenDetail: (id: number) => void;
-  onOpenHistory: (id: number) => void;
   onCommit: (id: number, patch: { start_date?: string; end_date?: string }) => void;
   onTitleCommit: (id: number, title: string) => void;
   onDelete: (id: number) => void;
@@ -47,7 +46,6 @@ export function SubTaskGantt({
   zoom,
   selectedId,
   onOpenDetail,
-  onOpenHistory,
   onCommit,
   onTitleCommit,
   onDelete,
@@ -219,16 +217,6 @@ export function SubTaskGantt({
                   <span className="shrink-0 text-[10px] tabular-nums text-muted-foreground">
                     {t("plan.days", { days: dayCount })}
                   </span>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-6 shrink-0"
-                    title={t("plan.historyTooltip")}
-                    onClick={() => onOpenHistory(st.id)}
-                    disabled={busy}
-                  >
-                    <History className="h-3.5 w-3.5" />
-                  </Button>
                   <Button
                     variant="ghost"
                     size="icon"

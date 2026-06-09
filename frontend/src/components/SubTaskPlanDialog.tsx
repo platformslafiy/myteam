@@ -13,12 +13,11 @@ import { useToast } from "@/components/ui/toast";
 import { useI18n } from "@/lib/i18n";
 import { api, ApiError } from "@/lib/api";
 import { cn } from "@/lib/utils";
-import type { SubTaskInput, SubTaskLogInput, Team, TeamMember, WorkItem } from "@/types";
+import type { SubTaskInput, Team, TeamMember, WorkItem } from "@/types";
 import { parseISO, toISO } from "./timeline/scale";
 import type { ZoomLevel } from "./timeline/types";
 import { SubTaskGantt } from "./SubTaskGantt";
 import { SubTaskDetailDialog } from "./SubTaskDetailDialog";
-import { SubTaskHistoryDialog } from "./SubTaskHistoryDialog";
 
 interface SubTaskPlanDialogProps {
   open: boolean;
@@ -48,13 +47,11 @@ export function SubTaskPlanDialog({
   const [zoom, setZoom] = React.useState<ZoomLevel>("day");
   const [fullscreen, setFullscreen] = React.useState(false);
   const [detailId, setDetailId] = React.useState<number | null>(null);
-  const [historyId, setHistoryId] = React.useState<number | null>(null);
 
   React.useEffect(() => {
     if (open) {
       setCurrent(item);
       setDetailId(null);
-      setHistoryId(null);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, item.id]);
@@ -75,7 +72,6 @@ export function SubTaskPlanDialog({
   }, [current, zoom]);
 
   const detailSubtask = current.subtasks.find((s) => s.id === detailId) ?? null;
-  const historySubtask = current.subtasks.find((s) => s.id === historyId) ?? null;
 
   const apply = (updated: WorkItem) => {
     setCurrent(updated);
@@ -131,19 +127,8 @@ export function SubTaskPlanDialog({
     const ok = await run(() => api.deleteSubtask(id), "toast.subtaskFail");
     if (ok) {
       if (detailId === id) setDetailId(null);
-      if (historyId === id) setHistoryId(null);
       toast({ title: t("toast.subtaskDeleted"), variant: "success" });
     }
-  };
-
-  const handleAddLog = async (subtaskId: number, input: SubTaskLogInput) => {
-    const ok = await run(() => api.addSubtaskLog(subtaskId, input), "toast.logFail");
-    if (ok) toast({ title: t("toast.logSaved"), variant: "success" });
-  };
-
-  const handleDeleteLog = async (logId: number) => {
-    const ok = await run(() => api.deleteSubtaskLog(logId), "toast.logFail");
-    if (ok) toast({ title: t("toast.logDeleted"), variant: "success" });
   };
 
   const fmt = (d: string) => {
@@ -158,9 +143,12 @@ export function SubTaskPlanDialog({
     <>
       <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
         <DialogContent
-          className={cn(fullscreen ? "h-[96vh] max-h-[96vh] w-[98vw] max-w-[98vw]" : "max-w-5xl")}
+          className={cn(
+            "overflow-hidden",
+            fullscreen ? "h-[96vh] max-h-[96vh] w-[98vw] max-w-[98vw]" : "max-w-5xl"
+          )}
         >
-          <div className="flex max-h-[96vh] flex-col">
+          <div className="flex max-h-[96vh] min-w-0 max-w-full flex-col overflow-hidden">
             <DialogHeader className="border-b px-6 py-4 pr-20">
               <div className="flex items-start justify-between gap-2">
                 <div>
@@ -182,7 +170,7 @@ export function SubTaskPlanDialog({
               </div>
             </DialogHeader>
 
-            <div className="flex flex-1 flex-col gap-3 overflow-hidden px-6 py-4">
+            <div className="flex min-w-0 flex-1 flex-col gap-3 overflow-hidden px-6 py-4">
               <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-muted/40 px-4 py-2.5">
                 <div className="flex items-center gap-2 text-sm">
                   <CalendarRange className="h-4 w-4 text-muted-foreground" />
@@ -225,15 +213,14 @@ export function SubTaskPlanDialog({
                   </Button>
                 </div>
               ) : (
-                <div className="min-h-[200px] flex-1 overflow-hidden">
+                <div className="min-h-[200px] min-w-0 flex-1 overflow-hidden">
                   <SubTaskGantt
                     subtasks={current.subtasks}
                     rangeStart={range.start}
                     rangeEnd={range.end}
                     zoom={zoom}
-                    selectedId={detailId ?? historyId}
+                    selectedId={detailId}
                     onOpenDetail={setDetailId}
-                    onOpenHistory={setHistoryId}
                     onCommit={handleUpdate}
                     onTitleCommit={(id, title) => handleUpdate(id, { title })}
                     onDelete={handleDelete}
@@ -260,15 +247,6 @@ export function SubTaskPlanDialog({
         onClose={() => setDetailId(null)}
         onUpdate={(patch) => detailSubtask && handleUpdate(detailSubtask.id, patch)}
         onDelete={() => detailSubtask && handleDelete(detailSubtask.id)}
-        busy={busy}
-      />
-
-      <SubTaskHistoryDialog
-        open={historyId != null}
-        subtask={historySubtask}
-        onClose={() => setHistoryId(null)}
-        onAddLog={(input) => historySubtask && handleAddLog(historySubtask.id, input)}
-        onDeleteLog={handleDeleteLog}
         busy={busy}
       />
     </>

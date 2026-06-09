@@ -1,0 +1,79 @@
+# Frontend: Deployment + Service + (OpenShift) Route.
+#   docker build -t <registry>/team-timeline-frontend:latest ./frontend
+#   docker push  <registry>/team-timeline-frontend:latest
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  labels: { app: team-timeline, component: frontend }
+spec:
+  replicas: 2
+  selector:
+    matchLabels: { app: team-timeline, component: frontend }
+  template:
+    metadata:
+      labels: { app: team-timeline, component: frontend }
+    spec:
+      securityContext:
+        runAsNonRoot: true
+      containers:
+        - name: frontend
+          image: team-timeline-frontend:latest # <-- replace with your registry path
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            # In-cluster DNS of the backend Service (proxied at /api).
+            - name: BACKEND_URL
+              value: http://backend:8080
+          readinessProbe:
+            httpGet: { path: /, port: 8080 }
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests: { cpu: 25m, memory: 64Mi }
+            limits: { cpu: 250m, memory: 256Mi }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  labels: { app: team-timeline, component: frontend }
+spec:
+  selector: { app: team-timeline, component: frontend }
+  ports:
+    - port: 8080
+      targetPort: 8080
+---
+# OpenShift Route (exposes the frontend publicly). On plain Kubernetes use an
+# Ingress instead (see the commented block below).
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: team-timeline
+  labels: { app: team-timeline }
+spec:
+  to:
+    kind: Service
+    name: frontend
+  port:
+    targetPort: 8080
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+# --- Plain Kubernetes Ingress alternative ---
+# apiVersion: networking.k8s.io/v1
+# kind: Ingress
+# metadata:
+#   name: team-timeline
+# spec:
+#   rules:
+#     - host: team-timeline.example.com
+#       http:
+#         paths:
+#           - path: /
+#             pathType: Prefix
+#             backend:
+#               service:
+#                 name: frontend
+#                 port: { number: 8080 }

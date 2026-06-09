@@ -52,6 +52,8 @@ myteam/
 │   │   └── routers/            # members / work_items / dashboard
 │   ├── requirements.txt
 │   └── .env.example
+├── docker-compose.yml           # local 2-container stack (backend + nginx frontend)
+├── k8s/                         # Kubernetes / OpenShift manifests
 └── frontend/                    # React + Vite SPA
     └── src/
         ├── components/
@@ -120,6 +122,42 @@ backend on `8080`, so there are no CORS issues during development.
 
 ---
 
+## Running with Docker
+
+Local development uses the Python virtualenv + Vite dev server above. For
+deployment, the app also ships as **two containers** (FastAPI backend, nginx
+serving the SPA and proxying `/api`). Both images are non-root and listen on
+`8080`, so they run unchanged on **Kubernetes / OpenShift** (incl. OpenShift's
+arbitrary-UID security model).
+
+```bash
+docker compose up --build
+# Frontend  -> http://localhost:8081   (proxies /api to the backend)
+# Backend   -> http://localhost:8080   (Swagger at /docs)
+```
+
+The backend keeps its SQLite file on a named volume (`backend-data`) so data
+survives restarts; demo data is seeded only when the DB is empty.
+
+### Kubernetes / OpenShift
+
+Manifests are in [`k8s/`](k8s/) (backend Deployment+Service+PVC, frontend
+Deployment+Service, and an OpenShift `Route` / Kubernetes `Ingress`).
+
+```bash
+# Build & push the images to your registry, then set the image: fields in k8s/*.yaml
+docker build -t <registry>/team-timeline-backend:latest ./backend
+docker build -t <registry>/team-timeline-frontend:latest ./frontend
+docker push <registry>/team-timeline-backend:latest
+docker push <registry>/team-timeline-frontend:latest
+
+kubectl apply -f k8s/        # or: oc apply -f k8s/
+```
+
+The frontend reaches the backend via the in-cluster `BACKEND_URL`
+(`http://backend:8080`). For production, point `DATABASE_URL` at PostgreSQL and
+scale the backend out (SQLite on a RWO volume is single-replica).
+
 ## Switching to PostgreSQL
 
 No code changes are required — only the connection string. In `backend/.env`:
@@ -150,11 +188,12 @@ against the new database.
   sub-tasks. Clicking a sub-task opens a **detail popup** with **calendar** date
   pickers, an **owner**, **working members**, **teams** and a progress slider —
   just like the main task. The earliest start / latest end of the sub-tasks
-  define the parent's dates, and the union of their people & teams is **rolled up
-  into the main task's detail** (sub-task contributors / teams). Each sub-task row
-  also has a **history button** opening an **activity timeline** popup where you
-  log what was done on a given date (with a progress value that advances the
-  sub-task). The main task card shows every sub-task's **progress %**.
+  define the parent's dates, its **progress** is the duration-weighted average of
+  the sub-tasks, and the union of their people & teams is **rolled up into the
+  main task's detail** (contributors / teams). The main task card lists every
+  sub-task with its **progress %**; **clicking a sub-task there** opens an
+  **activity-timeline** popup to log what was done on a given date (with a
+  progress value that advances the sub-task and rolls up to the parent).
 - **Stacked lanes** separate overlapping items; higher-priority bars stack on top,
   and each bar shows a **priority indicator** (`!!!` / `!!` / `!` / `·`).
 - **Deadline-risk bar colors:** blue = normal / on track, **red = at risk**

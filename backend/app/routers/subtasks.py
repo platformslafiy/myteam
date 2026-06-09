@@ -42,11 +42,22 @@ def _load_item(db: Session, item_id: int) -> models.ProjectWorkItem:
     return item
 
 
-def _recompute_parent_dates(item: models.ProjectWorkItem) -> None:
-    """Parent start/end = min/max of its sub-tasks (no-op when there are none)."""
-    if item.subtasks:
-        item.start_date = min(s.start_date for s in item.subtasks)
-        item.end_date = max(s.end_date for s in item.subtasks)
+def _recompute_parent(item: models.ProjectWorkItem) -> None:
+    """Roll sub-tasks up into the parent: start/end = min/max, and progress =
+    duration-weighted average of sub-task progress. No-op when there are none
+    (the parent keeps its manually set dates/progress)."""
+    if not item.subtasks:
+        return
+    item.start_date = min(s.start_date for s in item.subtasks)
+    item.end_date = max(s.end_date for s in item.subtasks)
+
+    total_days = 0
+    weighted = 0
+    for s in item.subtasks:
+        days = (s.end_date - s.start_date).days + 1
+        total_days += days
+        weighted += (s.progress or 0) * days
+    item.progress = round(weighted / total_days) if total_days else 0
 
 
 @router.post(
@@ -62,7 +73,7 @@ def create_subtask(item_id: int, payload: schemas.SubTaskCreate, db: Session = D
     db.flush()
     crud.apply_subtask_people(db, subtask, payload.assignee_ids, payload.assignees, payload.team_ids)
     db.flush()
-    _recompute_parent_dates(item)
+    _recompute_parent(item)
     db.commit()
     return crud.work_item_to_out(_load_item(db, item_id))
 
@@ -94,7 +105,7 @@ def update_subtask(subtask_id: int, payload: schemas.SubTaskUpdate, db: Session 
 
     db.flush()
     item = _load_item(db, subtask.work_item_id)
-    _recompute_parent_dates(item)
+    _recompute_parent(item)
     db.commit()
     return crud.work_item_to_out(_load_item(db, item.id))
 
@@ -108,7 +119,7 @@ def delete_subtask(subtask_id: int, db: Session = Depends(get_db)):
     db.delete(subtask)
     db.flush()
     item = _load_item(db, item_id)
-    _recompute_parent_dates(item)
+    _recompute_parent(item)
     db.commit()
     return crud.work_item_to_out(_load_item(db, item_id))
 
@@ -129,8 +140,11 @@ def add_subtask_log(subtask_id: int, payload: schemas.SubTaskLogIn, db: Session 
     # A log that records a progress value advances the sub-task's progress.
     if payload.progress is not None:
         subtask.progress = payload.progress
+    db.flush()
+    item = _load_item(db, subtask.work_item_id)
+    _recompute_parent(item)  # roll the new progress up into the parent
     db.commit()
-    return crud.work_item_to_out(_load_item(db, subtask.work_item_id))
+    return crud.work_item_to_out(_load_item(db, item.id))
 
 
 @router.delete("/subtask-logs/{log_id}", response_model=schemas.WorkItemOut)

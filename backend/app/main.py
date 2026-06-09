@@ -41,8 +41,10 @@ def on_startup() -> None:
     if settings.seed_on_startup:
         from .seed import run_seed
 
-        run_seed(reset=True)
-        logger.info("Database seeded on startup (SEED_ON_STARTUP=true).")
+        # reset=False -> seed only when the DB is empty, so a persistent volume
+        # (Docker/k8s) keeps its data across restarts.
+        run_seed(reset=False)
+        logger.info("Database seeded on startup if empty (SEED_ON_STARTUP=true).")
 
 
 @app.exception_handler(Exception)
